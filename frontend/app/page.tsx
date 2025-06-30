@@ -9,34 +9,35 @@ import { getApiUrl } from '@/lib/config'
 // Function to strip markdown and LaTeX notation
 function stripMarkdownAndLatex(text: string): string {
   return text
-    // Remove markdown code blocks
+    // Remove LaTeX block and inline math
+    .replace(/\\\[|\\\]/g, '') // Remove \[ and \]
+    .replace(/\\\(|\\\)/g, '') // Remove \( and \)
+    .replace(/\\begin\{[^}]*\}[\s\S]*?\\end\{[^}]*\}/g, '')
+    .replace(/\$\$[\s\S]*?\$\$/g, '')
+    .replace(/\$([^$]+)\$/g, '$1')
+    // Remove markdown code blocks and inline code
     .replace(/```[\s\S]*?```/g, '')
-    // Remove inline code
     .replace(/`([^`]+)`/g, '$1')
-    // Remove markdown headers
+    // Remove markdown headers, bold, italic, links, lists
     .replace(/^#{1,6}\s+/gm, '')
-    // Remove markdown bold
     .replace(/\*\*([^*]+)\*\*/g, '$1')
     .replace(/__([^_]+)__/g, '$1')
-    // Remove markdown italic
     .replace(/\*([^*]+)\*/g, '$1')
     .replace(/_([^_]+)_/g, '$1')
-    // Remove markdown links
     .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
-    // Remove markdown lists
     .replace(/^[\s]*[-*+]\s+/gm, '')
     .replace(/^[\s]*\d+\.\s+/gm, '')
-    // Remove LaTeX math blocks
-    .replace(/\$\$[\s\S]*?\$\$/g, '')
-    // Remove inline LaTeX math
-    .replace(/\$([^$]+)\$/g, '$1')
-    // Remove LaTeX commands
+    // Remove LaTeX commands and curly braces
     .replace(/\\[a-zA-Z]+(\{[^}]*\})?/g, '')
-    // Remove LaTeX environments
-    .replace(/\\begin\{[^}]*\}[\s\S]*?\\end\{[^}]*\}/g, '')
+    .replace(/[{}]/g, '')
+    // Remove unnecessary equal signs surrounded by spaces
+    .replace(/\s=\s/g, ' ')
+    // Remove any leftover backslashes
+    .replace(/\\/g, '')
     // Clean up extra whitespace
     .replace(/\n\s*\n/g, '\n\n')
-    .trim()
+    .replace(/[ ]{2,}/g, ' ')
+    .trim();
 }
 
 interface Message {
@@ -89,7 +90,7 @@ export default function ChatPage() {
     setIsLoading(true)
 
     try {
-      const response = await fetch('/api/chat', {
+      const response = await fetch('https://the-ai-engineer-challenge-xi-ten.vercel.app/api/chat', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -102,36 +103,32 @@ export default function ChatPage() {
         }),
       })
 
-      if (!response.ok) {
-        throw new Error('Failed to get response')
-      }
+      if (!response.body) throw new Error('No response body')
 
-      const reader = response.body?.getReader()
-      if (!reader) throw new Error('No reader available')
+      const reader = response.body.getReader()
+      const decoder = new TextDecoder()
+      let accumulatedContent = ''
 
+      // Add an empty AI message first
       const aiMessage: Message = {
         id: (Date.now() + 1).toString(),
         content: '',
         role: 'ai',
         timestamp: new Date()
       }
-
       setMessages(prev => [...prev, aiMessage])
-
-      const decoder = new TextDecoder()
-      let accumulatedContent = ''
 
       while (true) {
         const { done, value } = await reader.read()
         if (done) break
-
         const chunk = decoder.decode(value)
         accumulatedContent += chunk
 
-        setMessages(prev => 
-          prev.map(msg => 
-            msg.id === aiMessage.id 
-              ? { ...msg, content: accumulatedContent }
+        // Remove markdown/LaTeX as it streams in
+        setMessages(prev =>
+          prev.map(msg =>
+            msg.id === aiMessage.id
+              ? { ...msg, content: stripMarkdownAndLatex(accumulatedContent) }
               : msg
           )
         )
