@@ -1,0 +1,5 @@
+{
+  "remote.WSL.reconnectDelay": 5,
+  "remote.WSL.serverReadyTimeout": 60000,
+  "remote.WSL.fileWatcher.polling": true
+} 
