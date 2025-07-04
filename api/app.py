@@ -1,5 +1,5 @@
 # Import required FastAPI components for building the API
-from fastapi import FastAPI, HTTPException, UploadFile, File, Form
+from fastapi import FastAPI, HTTPException, UploadFile, File, Form, Body
 from fastapi.responses import StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
 import os
@@ -18,7 +18,7 @@ from openai import OpenAI
 # Import aimakerspace components
 import sys
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
-from aimakerspace.text_utils import PDFLoader, CharacterTextSplitter
+from aimakerspace.text_utils import PDFLoader, CharacterTextSplitter, TextFileLoader, DocxFileLoader
 from aimakerspace.vectordatabase import VectorDatabase
 from aimakerspace.openai_utils.embedding import EmbeddingModel
 
@@ -34,8 +34,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Store vector databases for different sessions
+# Store vector databases and document metadata for different sessions
 vector_dbs = {}
+document_metadata = {}  # session_id -> list of {filename, filetype, chunks_count}
 
 # Define the data models using Pydantic
 class ChatRequest(BaseModel):
@@ -65,71 +66,78 @@ def save_uploaded_file(upload_file: UploadFile) -> str:
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error saving file: {str(e)}")
 
-def process_pdf_with_aimakerspace(file_path: str, session_id: str) -> int:
-    """Process PDF using aimakerspace library and return number of chunks."""
+async def process_document_with_aimakerspace_async(file_path: str, session_id: str, filetype: str) -> int:
+    """Process document using aimakerspace library and return number of chunks (async version)."""
     try:
-        # Load PDF using aimakerspace
-        pdf_loader = PDFLoader(file_path)
-        documents = pdf_loader.load_documents()
-        
+        if filetype == 'pdf':
+            loader = PDFLoader(file_path)
+        elif filetype == 'docx':
+            loader = DocxFileLoader(file_path)
+        elif filetype == 'txt':
+            loader = TextFileLoader(file_path)
+        else:
+            raise HTTPException(status_code=400, detail="Unsupported file type")
+        documents = loader.load_documents()
         if not documents or not documents[0].strip():
-            raise HTTPException(status_code=400, detail="No text content found in PDF")
-        
-        # Split text into chunks
+            raise HTTPException(status_code=400, detail="No text content found in document")
         text_splitter = CharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
         chunks = text_splitter.split_texts(documents)
-        
         if not chunks:
             return 0
-        
-        # Create vector database for session
         embedding_model = EmbeddingModel()
         vector_db = VectorDatabase(embedding_model)
-        
-        # Build vector database from chunks
-        asyncio.run(vector_db.abuild_from_list(chunks))
-        
-        # Store vector database for session
-        vector_dbs[session_id] = vector_db
-        
+        await vector_db.abuild_from_list(chunks)
+        # Store or update vector database for session
+        if session_id not in vector_dbs:
+            vector_dbs[session_id] = vector_db
+        else:
+            # Optionally, merge or replace as needed
+            vector_dbs[session_id] = vector_db
+        # Store document metadata
+        if session_id not in document_metadata:
+            document_metadata[session_id] = []
+        document_metadata[session_id].append({
+            'filename': os.path.basename(file_path),
+            'filetype': filetype,
+            'chunks_count': len(chunks)
+        })
         return len(chunks)
-        
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error processing PDF: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error processing document: {str(e)}")
     finally:
-        # Clean up temporary file
         try:
             os.unlink(file_path)
         except:
             pass
 
-@app.post("/api/upload-pdf")
-async def upload_pdf(
+@app.post("/api/upload-document")
+async def upload_document(
     file: UploadFile = File(...),
     session_id: Optional[str] = Form(None)
 ):
-    """Upload and process a PDF file for RAG functionality using aimakerspace."""
-    if not file.filename.lower().endswith('.pdf'):
-        raise HTTPException(status_code=400, detail="Only PDF files are supported")
-    
-    # Generate session ID if not provided
+    """Upload and process a document (PDF, DOCX, TXT) for RAG functionality using aimakerspace."""
+    filename = file.filename.lower()
+    if filename.endswith('.pdf'):
+        filetype = 'pdf'
+    elif filename.endswith('.docx'):
+        filetype = 'docx'
+    elif filename.endswith('.txt'):
+        filetype = 'txt'
+    else:
+        raise HTTPException(status_code=400, detail="Only PDF, DOCX, and TXT files are supported")
     if not session_id:
         session_id = str(uuid.uuid4())
-    
     try:
-        # Save uploaded file
         file_path = save_uploaded_file(file)
-        
-        # Process PDF using aimakerspace
-        chunks_count = process_pdf_with_aimakerspace(file_path, session_id)
-        
-        return UploadResponse(
-            message="PDF uploaded and processed successfully using AIMakerSpace",
-            session_id=session_id,
-            filename=file.filename,
-            chunks_count=chunks_count
-        )
-    
+        chunks_count = await process_document_with_aimakerspace_async(file_path, session_id, filetype)
+        return {
+            "message": f"{filetype.upper()} uploaded and processed successfully using AIMakerSpace",
+            "session_id": session_id,
+            "filename": file.filename,
+            "filetype": filetype,
+            "chunks_count": chunks_count,
+            "documents": document_metadata.get(session_id, [])
+        }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -137,20 +145,12 @@ async def upload_pdf(
 async def get_documents(session_id: str):
     """Get information about uploaded documents for a session."""
     try:
-        if session_id not in vector_dbs:
-            return {
-                "session_id": session_id,
-                "total_chunks": 0,
-                "documents": []
-            }
-        
-        vector_db = vector_dbs[session_id]
-        total_chunks = len(vector_db.vectors)
-        
+        docs = document_metadata.get(session_id, [])
+        total_chunks = sum(doc['chunks_count'] for doc in docs)
         return {
             "session_id": session_id,
             "total_chunks": total_chunks,
-            "documents": ["PDF Document"]  # Since we don't store filenames separately
+            "documents": docs
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -209,6 +209,43 @@ async def chat(request: ChatRequest):
     
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/summarize")
+async def summarize_document(
+    session_id: str = Body(...),
+    filename: str = Body(...),
+    filetype: str = Body(...),
+    api_key: Optional[str] = Body(None)
+):
+    """Summarize a document for a session using OpenAI."""
+    try:
+        # Find the document in metadata
+        docs = document_metadata.get(session_id, [])
+        doc_meta = next((d for d in docs if d['filename'] == filename and d['filetype'] == filetype), None)
+        if not doc_meta:
+            raise HTTPException(status_code=404, detail="Document not found for session")
+        # Retrieve the text from the vector DB (use all chunks)
+        vector_db = vector_dbs.get(session_id)
+        if not vector_db:
+            raise HTTPException(status_code=404, detail="No vector DB for session")
+        # For simplicity, concatenate all chunk keys (which are the text chunks)
+        all_text = "\n".join(list(vector_db.vectors.keys()))
+        if not all_text.strip():
+            raise HTTPException(status_code=400, detail="No text found in document")
+        # Use OpenAI to summarize
+        client = OpenAI(api_key=api_key) if api_key else OpenAI()
+        prompt = f"Summarize the following legal document for a legal professional. Focus on key points, obligations, and important sections.\n\n{all_text[:12000]}"  # Limit to 12k chars for safety
+        completion = client.chat.completions.create(
+            model="gpt-3.5-turbo",
+            messages=[
+                {"role": "system", "content": "You are a helpful legal assistant."},
+                {"role": "user", "content": prompt}
+            ]
+        )
+        summary = completion.choices[0].message.content.strip()
+        return {"summary": summary}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error summarizing document: {str(e)}")
 
 @app.get("/api/health")
 async def health_check():

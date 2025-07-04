@@ -1,6 +1,7 @@
 import os
 from typing import List
 import PyPDF2
+from docx import Document
 
 
 class TextFileLoader:
@@ -115,6 +116,43 @@ class PDFLoader:
                             text += page.extract_text() + "\n"
                         
                         self.documents.append(text)
+
+    def load_documents(self):
+        self.load()
+        return self.documents
+
+
+class DocxFileLoader:
+    def __init__(self, path: str):
+        self.documents = []
+        self.path = path
+
+    def load(self):
+        if os.path.isdir(self.path):
+            self.load_directory()
+        elif os.path.isfile(self.path) and self.path.endswith(".docx"):
+            self.load_file()
+        else:
+            raise ValueError(
+                "Provided path is neither a valid directory nor a .docx file."
+            )
+
+    def load_file(self):
+        doc = Document(self.path)
+        full_text = []
+        for para in doc.paragraphs:
+            full_text.append(para.text)
+        self.documents.append("\n".join(full_text))
+
+    def load_directory(self):
+        for root, _, files in os.walk(self.path):
+            for file in files:
+                if file.endswith(".docx"):
+                    doc = Document(os.path.join(root, file))
+                    full_text = []
+                    for para in doc.paragraphs:
+                        full_text.append(para.text)
+                    self.documents.append("\n".join(full_text))
 
     def load_documents(self):
         self.load()
