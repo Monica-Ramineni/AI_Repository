@@ -1,4 +1,5 @@
 import os
+import traceback
 print("text_utils.py starting up")
 try:
     import PyPDF2
@@ -99,6 +100,7 @@ class PDFLoader:
             raise ValueError(f"Cannot access file at '{self.path}': {str(e)}")
         except Exception as e:
             print(f"Exception: {e}")
+            traceback.print_exc()
             raise ValueError(f"Error processing file at '{self.path}': {str(e)}")
 
     def load_file(self):

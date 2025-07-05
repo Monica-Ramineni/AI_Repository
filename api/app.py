@@ -10,6 +10,7 @@ import shutil
 from typing import Optional, List
 import uuid
 import asyncio
+import traceback
 
 # Import Pydantic for data validation and settings management
 from pydantic import BaseModel
@@ -107,6 +108,7 @@ async def process_document_with_aimakerspace_async(file_path: str, session_id: s
         return len(chunks)
     except Exception as e:
         print(f"process_document_with_aimakerspace_async error: {e}")
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"Error processing document: {str(e)}")
     finally:
         try:
