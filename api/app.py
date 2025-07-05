@@ -1,3 +1,5 @@
+print("app.py starting up")
+
 # Import required FastAPI components for building the API
 from fastapi import FastAPI, HTTPException, UploadFile, File, Form, Body
 from fastapi.responses import StreamingResponse
