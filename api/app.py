@@ -54,14 +54,15 @@ class UploadResponse(BaseModel):
     chunks_count: int
 
 def save_uploaded_file(upload_file: UploadFile) -> str:
-    """Save uploaded file to temporary location and return path."""
+    """Save uploaded file to /tmp and return path (Vercel compatibility)."""
     try:
-        # Create temporary file
+        # Always use /tmp for temp files (Vercel's writable directory)
         suffix = os.path.splitext(upload_file.filename)[1]
-        with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp_file:
+        tmp_dir = "/tmp"
+        os.makedirs(tmp_dir, exist_ok=True)
+        with tempfile.NamedTemporaryFile(delete=False, suffix=suffix, dir=tmp_dir) as tmp_file:
             shutil.copyfileobj(upload_file.file, tmp_file)
             tmp_path = tmp_file.name
-        
         return tmp_path
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error saving file: {str(e)}")
