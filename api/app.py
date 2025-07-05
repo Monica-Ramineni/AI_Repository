@@ -104,6 +104,7 @@ async def process_document_with_aimakerspace_async(file_path: str, session_id: s
         })
         return len(chunks)
     except Exception as e:
+        print(f"process_document_with_aimakerspace_async error: {e}")
         raise HTTPException(status_code=500, detail=f"Error processing document: {str(e)}")
     finally:
         try:

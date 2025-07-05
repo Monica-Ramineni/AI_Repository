@@ -86,8 +86,10 @@ class PDFLoader:
             self.load_file()
             
         except IOError as e:
+            print(f"IOError: {e}")
             raise ValueError(f"Cannot access file at '{self.path}': {str(e)}")
         except Exception as e:
+            print(f"Exception: {e}")
             raise ValueError(f"Error processing file at '{self.path}': {str(e)}")
 
     def load_file(self):
