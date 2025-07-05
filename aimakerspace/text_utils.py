@@ -1,7 +1,16 @@
 import os
+print("text_utils.py starting up")
+try:
+    import PyPDF2
+    print("PyPDF2 import succeeded")
+except Exception as e:
+    print(f"PyPDF2 import failed: {e}")
+try:
+    from docx import Document
+    print("python-docx import succeeded")
+except Exception as e:
+    print(f"python-docx import failed: {e}")
 from typing import List
-import PyPDF2
-from docx import Document
 
 
 class TextFileLoader:
