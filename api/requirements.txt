@@ -1,6 +1,2 @@
 fastapi
 mangum
-python-dotenv
-langchain-openai
-langchain-tavily
-biopython 
