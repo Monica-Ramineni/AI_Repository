@@ -6,10 +6,15 @@ readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
     "arxiv>=2.2.0",
+    "biopython>=1.85",
+    "fastapi>=0.116.1",
     "jupyter>=1.1.1",
     "langchain-community>=0.3.27",
     "langchain-openai>=0.3.27",
+    "langchain-tavily>=0.2.7",
     "langgraph>=0.5.1",
     "langsmith>=0.4.4",
+    "python-dotenv>=1.1.1",
     "tavily-python>=0.7.9",
+    "uvicorn>=0.35.0",
 ]
