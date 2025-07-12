@@ -4,3 +4,4 @@ python-dotenv
 biopython
 langchain-openai
 langchain-tavily
+mangum

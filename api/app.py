@@ -6,6 +6,7 @@ from langchain_tavily import TavilySearch
 from Bio import Entrez
 import os
 from dotenv import load_dotenv
+from mangum import Mangum
 
 # Load environment variables
 load_dotenv()
@@ -85,4 +86,6 @@ async def ask(query: Query):
 # Health check (optional but useful)
 @app.get("/health")
 def health_check():
-    return {"status": "ok"} 
+    return {"status": "ok"}
+
+handler = Mangum(app) 
