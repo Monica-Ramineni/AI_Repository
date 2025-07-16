@@ -13,7 +13,7 @@ function App() {
     setChat((prev) => [...prev, { role: "user", text: input, time }]);
     setLoading(true);
     try {
-      const response = await fetch("http://localhost:8000/ask", {
+      const response = await fetch("/api/app", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ question: input }),

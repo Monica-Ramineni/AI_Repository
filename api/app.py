@@ -77,12 +77,12 @@ class Query(BaseModel):
     question: str
 
 # Endpoint
-@app.post("/ask")
+@app.post("/")
 async def ask(query: Query):
     answer, typ = agent(query.question)
     return {"type": typ, "data": answer}
 
 # Health check (optional but useful)
-@app.get("/health")
+@app.get("/")
 def health_check():
     return {"status": "ok"}

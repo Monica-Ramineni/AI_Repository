@@ -1,5 +1,4 @@
-backend/
-backend/.env
+.env
 .venv/
 .vercel/
 frontend/node_modules/
