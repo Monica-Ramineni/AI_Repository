@@ -3,14 +3,18 @@
 ### ❓Question 1) What is the purpose of the `chunk_overlap` parameter when using `RecursiveCharacterTextSplitter` to prepare documents for RAG, and what trade-offs arise as you increase or decrease its value?
 
 #### ✅Answer : Purpose and trade-offs of `chunk_overlap` in `RecursiveCharacterTextSplitter` :
-- **Purpose**: chunk_overlap repeats a slice of text at the end of one chunk into the start of the next so information that crosses a boundary isn’t lost to retrieval.
+- **Purpose**: 
+
+The 'chunk_overlap' parameter sets how much text from the end of one chunk is duplicated at the start of the next. Its purpose is to preserve and maintain semantic continuity and cross-boundary contex, so sentences/facts that span a split still appear in at least one retrieved chunk for RAG, for better recall of boundary-spanning facts.
 - **Increase overlap**:
   - **Pros**: Higher chance of capturing boundary-spanning facts; can improve recall and answer completeness.
   - **Cons**: More duplicate content → larger index, higher embedding/storage/query cost, and more chances of retrieving redundant chunks (can hurt precision).
 - **Decrease overlap**:
   - **Pros**: Smaller index and faster pipeline with less duplication.
   - **Cons**: Greater risk of chopping facts; may lower recall if key info falls on boundaries.
-- Note: In this repo, `app/rag.py` currently uses `chunk_overlap=0` for simplicity and efficiency.
+- Note: 
+
+In this repo, `app/rag.py` currently uses `chunk_overlap=0` for simplicity and efficiency.
 to minimize embedding time, memory, and latency, and to avoid redundant retrievals. This workshop repo prioritizes serving/graph orchestration speed over maximal recall, so we accept the slight recall trade-off.
 
 ### ❓Question 2) Your retriever is configured with search_kwargs={"k": 5}. How would adjusting k likely affect RAGAS metrics such as Context Precision and Context Recall in practice, and why?
@@ -37,7 +41,8 @@ In dense retrieval, `k` controls how many top-ranked chunks are returned for eac
 
 ### ❓Question 3) Compare the agent and agent_helpful assistants defined in langgraph.json. Where does the helpfulness evaluator fit in the graph, and under what condition should execution route back to the agent vs. terminate?
 
-#### ✅Answer : Compare `agent` vs `agent_helpful` and where the helpfulness evaluator fits
+#### ✅Answer : Comparison of `agent` vs `agent_helpful` assistants :
+
 - **`agent` (maps to graph `simple_agent`)**: Model → tools when requested → model → end.
 - **`agent_helpful` (maps to graph `agent_with_helpfulness`)**: Model → (tools if requested) → model → helpfulness evaluator → either loop back or end.
 
@@ -63,10 +68,8 @@ In dense retrieval, `k` controls how many top-ranked chunks are returned for eac
   </tbody>
 </table>
 
-- **Where the helpfulness evaluator fits**: After the agent responds and there are no pending tool calls, execution routes to the helpfulness node. It checks if the answer is helpful (outputs `HELPFULNESS:Y` or `HELPFULNESS:N`).
+- **Where the helpfulness evaluator fits**: In the graph, After the agent responds and there are no pending tool calls, execution routes to the helpfulness node. It checks if the answer is helpful (outputs `HELPFULNESS:Y` or `HELPFULNESS:N`).
 - **Routing condition**:
   - If evaluator returns `Y` → terminate.
   - If `N` → route back to the agent to refine and try again (loop).
   - There is also a loop cap: if message history exceeds a limit, evaluator emits `HELPFULNESS:END` and the graph terminates.
-
-
