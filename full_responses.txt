@@ -1,0 +1,31 @@
+🚀 Testing A2A Client Agent (Activity #1)
+==================================================
+
+📊 Test 1: Web Search via A2A Protocol
+----------------------------------------
+✅ Web search completed successfully!
+Response: Web search result: Here are some of the latest developments in artificial intelligence from 2024:
+
+1. **Google's AI Advancements**: Google released Gemini 2.0, a powerful AI model designed for the "ag...
+
+📚 Test 2: Academic Search via A2A Protocol
+----------------------------------------
+✅ Academic search completed successfully!
+Response: Academic search result: Here are some recent academic papers about transformer architectures:
+
+1. **TurboViT: Generating Fast Vision Transformers via Generative Architecture Search**  
+   - **Authors*...
+
+📄 Test 3: Document Search via A2A Protocol
+----------------------------------------
+✅ Document search completed successfully!
+Response: Web search result: Here are some resources that provide information about policies and how to manage them effectively:
+
+1. **[How to write policies and procedures (with free template) - PowerDMS](http...
+
+🎯 Activity #1 Complete!
+==================================================
+✅ LangGraph client agent created
+✅ A2A protocol communication working
+✅ Agent-to-agent collaboration demonstrated
+✅ All three tools (web, academic, documents) tested
