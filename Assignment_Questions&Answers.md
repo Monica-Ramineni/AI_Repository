@@ -5,25 +5,35 @@ What are the core components of an `AgentCard`?
 
 #### ✅Answer :
 
+An **AgentCard** is a standardized metadata structure that describes an AI agent's capabilities, contact information, and communication preferences. It's essentially a "digital business card" that enables agents to discover and communicate with each other through the A2A protocol.
+
 The core components of an AgentCard include:
 
-🔹 name: The display name that identifies the agent (e.g., "General Purpose Agent")
+🔹 **name**: The display name that identifies the agent (e.g., "General Purpose Agent")
 
-🔹 description: A clear explanation of what the agent does and its capabilities
+🔹 **description**: A clear explanation of what the agent does and its capabilities
 
-🔹 url: The endpoint where other agents can reach this agent
+🔹 **url**: The endpoint where other agents can reach this agent
 
-🔹 version: The current version number for compatibility tracking
+🔹 **version**: The current version number for compatibility tracking
 
-🔹 default_input_modes: What types of input the agent accepts (text, images, etc.)
+🔹 **default_input_modes**: What types of input the agent accepts (text, images, etc.)
 
-🔹 default_output_modes: What types of output the agent can provide
+🔹 **default_output_modes**: What types of output the agent can provide
 
-🔹 capabilities: Special features like streaming responses or push notifications
+🔹 **capabilities**: Special features like streaming responses or push notifications
 
-🔹 skills: Specific abilities the agent has, each with examples and descriptions
+🔹 **skills**: Specific abilities the agent has, each with examples and descriptions
 
-Think of it as a "business card" that tells other agents exactly what this agent can do and how to work with it.
+🔹 **preferred_transport**: The communication protocol and transport method the agent prefers (e.g., HTTP, WebSocket, gRPC)
+
+🔹 **contact_information**: How to reach the agent's maintainers or support team
+
+🔹 **authentication_requirements**: What authentication methods the agent supports
+
+🔹 **rate_limits**: Any usage restrictions or rate limiting policies
+
+Think of it as a comprehensive "business card" that tells other agents exactly what this agent can do, how to reach it, and how to work with it effectively.
 
 ### ❓ Question #2:
 Why is A2A (and other such protocols) important in your own words?
